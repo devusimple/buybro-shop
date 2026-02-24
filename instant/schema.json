@@ -1,0 +1,140 @@
+{
+  "attrs": {
+    "users": {
+      "id": { "value": "string" },
+      "email": { "value": "string", "unique": true, "indexed": true },
+      "name": { "value": "string" },
+      "image": { "value": "string" },
+      "role": { "value": "string" },
+      "createdAt": { "value": "number" },
+      "updatedAt": { "value": "number" }
+    },
+    "categories": {
+      "id": { "value": "string" },
+      "name": { "value": "string", "unique": true },
+      "slug": { "value": "string", "unique": true },
+      "description": { "value": "string" },
+      "image": { "value": "string" },
+      "parentId": { "value": "string" },
+      "createdAt": { "value": "number" },
+      "updatedAt": { "value": "number" }
+    },
+    "products": {
+      "id": { "value": "string" },
+      "name": { "value": "string", "indexed": true },
+      "slug": { "value": "string", "unique": true },
+      "description": { "value": "string" },
+      "shortDescription": { "value": "string" },
+      "price": { "value": "number" },
+      "comparePrice": { "value": "number" },
+      "costPrice": { "value": "number" },
+      "sku": { "value": "string", "unique": true },
+      "barcode": { "value": "string" },
+      "quantity": { "value": "number" },
+      "weight": { "value": "number" },
+      "images": { "value": "string" },
+      "featured": { "value": "boolean", "indexed": true },
+      "status": { "value": "string", "indexed": true },
+      "tags": { "value": "string" },
+      "createdAt": { "value": "number" },
+      "updatedAt": { "value": "number" }
+    },
+    "productVariants": {
+      "id": { "value": "string" },
+      "productId": { "value": "string", "indexed": true },
+      "name": { "value": "string" },
+      "sku": { "value": "string" },
+      "price": { "value": "number" },
+      "quantity": { "value": "number" },
+      "options": { "value": "string" },
+      "createdAt": { "value": "number" }
+    },
+    "orders": {
+      "id": { "value": "string" },
+      "orderNumber": { "value": "string", "unique": true },
+      "userId": { "value": "string", "indexed": true },
+      "email": { "value": "string", "indexed": true },
+      "status": { "value": "string", "indexed": true },
+      "paymentStatus": { "value": "string" },
+      "paymentMethod": { "value": "string" },
+      "subtotal": { "value": "number" },
+      "tax": { "value": "number" },
+      "shipping": { "value": "number" },
+      "discount": { "value": "number" },
+      "total": { "value": "number" },
+      "shippingAddress": { "value": "string" },
+      "billingAddress": { "value": "string" },
+      "notes": { "value": "string" },
+      "createdAt": { "value": "number", "indexed": true },
+      "updatedAt": { "value": "number" }
+    },
+    "orderItems": {
+      "id": { "value": "string" },
+      "orderId": { "value": "string", "indexed": true },
+      "productId": { "value": "string" },
+      "variantId": { "value": "string" },
+      "name": { "value": "string" },
+      "sku": { "value": "string" },
+      "price": { "value": "number" },
+      "quantity": { "value": "number" },
+      "total": { "value": "number" },
+      "image": { "value": "string" },
+      "createdAt": { "value": "number" }
+    },
+    "testimonials": {
+      "id": { "value": "string" },
+      "name": { "value": "string" },
+      "email": { "value": "string" },
+      "role": { "value": "string" },
+      "company": { "value": "string" },
+      "content": { "value": "string" },
+      "rating": { "value": "number" },
+      "image": { "value": "string" },
+      "approved": { "value": "boolean", "indexed": true },
+      "createdAt": { "value": "number" }
+    },
+    "newsletterSubscribers": {
+      "id": { "value": "string" },
+      "email": { "value": "string", "unique": true },
+      "subscribed": { "value": "boolean" },
+      "createdAt": { "value": "number" }
+    },
+    "promotionalBanners": {
+      "id": { "value": "string" },
+      "title": { "value": "string" },
+      "subtitle": { "value": "string" },
+      "image": { "value": "string" },
+      "link": { "value": "string" },
+      "buttonText": { "value": "string" },
+      "active": { "value": "boolean", "indexed": true },
+      "order": { "value": "number" },
+      "createdAt": { "value": "number" }
+    }
+  },
+  "links": {
+    "categoryProducts": {
+      "forward": { "on": "categories", "has": "many", "label": "products" },
+      "reverse": { "on": "products", "has": "one", "label": "category" }
+    },
+    "categoryChildren": {
+      "forward": { "on": "categories", "has": "many", "label": "children" },
+      "reverse": { "on": "categories", "has": "one", "label": "parent" }
+    },
+    "productVariantItems": {
+      "forward": { "on": "products", "has": "many", "label": "variants" },
+      "reverse": { "on": "productVariants", "has": "one", "label": "product" }
+    },
+    "userOrders": {
+      "forward": { "on": "users", "has": "many", "label": "orders" },
+      "reverse": { "on": "orders", "has": "one", "label": "user" }
+    },
+    "orderItems": {
+      "forward": { "on": "orders", "has": "many", "label": "items" },
+      "reverse": { "on": "orderItems", "has": "one", "label": "order" }
+    },
+    "orderItemProduct": {
+      "forward": { "on": "orderItems", "has": "one", "label": "product" },
+      "reverse": { "on": "products", "has": "many", "label": "orderItems" }
+    }
+  }
+}
