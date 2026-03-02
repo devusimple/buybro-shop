@@ -50,4 +50,5 @@ server.log
 # Skills directory
 /skills/
 
-/app/api
+.api
+.api/
