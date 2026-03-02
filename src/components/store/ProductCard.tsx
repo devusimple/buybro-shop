@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/lib/cart-store';
-import type { Product } from '@/types';
+import { Product } from '../landing/FeaturedProducts';
 
 interface ProductCardProps {
   product: Product;
@@ -32,7 +32,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem(product, undefined, 1);
+    // addItem(product, undefined, 1);
     openCart();
   };
 

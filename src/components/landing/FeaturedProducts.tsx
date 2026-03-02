@@ -6,11 +6,47 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ProductCard, ProductCardSkeleton } from '@/components/store/ProductCard';
-import type { Product } from '@/types';
+import db from '@/lib/db';
 
 interface FeaturedProductsProps {
   limit?: number;
 }
+export type Product = {
+  id: string;
+  createdAt: number;
+  name: string;
+  updatedAt: number;
+  description: string;
+  slug: string;
+  price: number;
+  quantity: number;
+  sku: string;
+  status: string;
+  barcode: string;
+  comparePrice: number;
+  costPrice: number;
+  featured: boolean;
+  images: string;
+  shortDescription: string;
+  tags: string;
+  weight: number;
+  categoryId?: string | undefined;
+  compareAtPrice?: number | undefined;
+  rating?: number | undefined;
+  reviewCount?: number | undefined;
+  stock?: number | undefined;
+  category: {
+    id: string;
+    createdAt: number;
+    image: string;
+    name: string;
+    updatedAt: number;
+    description: string;
+    parentId: string;
+    slug: string;
+  } | undefined;
+}
+
 
 export function FeaturedProducts({ limit = 8 }: FeaturedProductsProps) {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,13 +56,25 @@ export function FeaturedProducts({ limit = 8 }: FeaturedProductsProps) {
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const response = await fetch(`/api/products?featured=true&limit=${limit}`);
-        const data = await response.json();
-        
-        if (data.success) {
-          setProducts(data.data);
+        const { data } = db.useQuery({
+          products: {
+            $: {
+              limit,
+              order: {
+                featured: "asc",
+                status: "asc",
+                name: 'asc'
+              },
+            },
+            category: { $: {} }
+          }
+        })
+
+
+        if (data?.products) {
+          setProducts(data.products);
         } else {
-          setError(data.error);
+          setError("Someting went wrong");
         }
       } catch (err) {
         setError('Failed to load products');
