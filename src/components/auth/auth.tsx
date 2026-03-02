@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/input-otp"
 import { toast } from 'sonner';
 import { redirect } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 
 export default function Auth() {
@@ -71,13 +72,15 @@ export default function Auth() {
                                             Choose a unique username for your account.
                                         </FieldDescription>
                                     </Field>
-                                    <Button onClick={handleContinue}>Continue</Button>
+                                    <Button onClick={handleContinue}>
+                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Continue"}
+                                    </Button>
                                 </>
                             )
                             :
                             (
                                 <>
-                                    <InputOTP maxLength={6} value={otp} onComplete={handleVerify} onChange={setOtp}>
+                                    <InputOTP disabled={loading} maxLength={6} value={otp} onComplete={handleVerify} onChange={setOtp}>
                                         <InputOTPGroup>
                                             <InputOTPSlot index={0} aria-invalid />
                                             <InputOTPSlot index={1} aria-invalid />
