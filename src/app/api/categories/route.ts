@@ -1,21 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { Category } from '@/types';
-
-// Mock categories data
-const mockCategories: Category[] = [
-  { id: '1', name: 'Electronics', slug: 'electronics', description: 'Latest gadgets and electronic devices', image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400', parentId: null, createdAt: Date.now(), updatedAt: Date.now() },
-  { id: '2', name: 'Fashion', slug: 'fashion', description: 'Trendy clothing and accessories', image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400', parentId: null, createdAt: Date.now(), updatedAt: Date.now() },
-  { id: '3', name: 'Home & Living', slug: 'home-living', description: 'Furniture and home decor', image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400', parentId: null, createdAt: Date.now(), updatedAt: Date.now() },
-  { id: '4', name: 'Sports', slug: 'sports', description: 'Sports equipment and activewear', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400', parentId: null, createdAt: Date.now(), updatedAt: Date.now() },
-  { id: '5', name: 'Beauty', slug: 'beauty', description: 'Skincare, makeup, and beauty products', image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400', parentId: null, createdAt: Date.now(), updatedAt: Date.now() },
-];
+import { queryDB, transactDB, id, updateOp } from '@/lib/instant-server';
 
 // GET /api/categories - Get all categories
 export async function GET() {
   try {
+    // Query InstantDB for categories with their products
+    const { result, error } = await queryDB({
+      categories: {
+        $: {},
+        products: {},
+        parent: {},
+      },
+    });
+
+    if (error || !result) {
+      console.error('InstantDB query error:', error);
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to fetch categories' },
+        { status: 500 }
+      );
+    }
+
+    const categories = result.categories || [];
+
+    // Enrich categories with product count
+    const enrichedCategories = categories.map((cat: Record<string, unknown>) => ({
+      ...cat,
+      productCount: Array.isArray(cat.products) ? cat.products.length : 0,
+    }));
+
     return NextResponse.json({
       success: true,
-      data: mockCategories,
+      data: enrichedCategories,
     });
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -30,10 +46,40 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+    const {
+      name,
+      slug,
+      description,
+      image,
+      parentId,
+    } = body;
+
+    const categoryId = id();
+    const now = Date.now();
+    const categorySlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    // Create the category
+    const { success, error } = await transactDB([
+      updateOp('categories', categoryId, {
+        name,
+        slug: categorySlug,
+        description: description || '',
+        image: image || '',
+        createdAt: now,
+        updatedAt: now,
+      }, parentId ? [{ entity: 'categories', id: parentId }] : undefined),
+    ]);
+
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to create category' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      data: { id: `${Date.now()}` },
+      data: { id: categoryId, slug: categorySlug },
       message: 'Category created successfully',
     });
   } catch (error) {

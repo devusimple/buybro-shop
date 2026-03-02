@@ -24,8 +24,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useCartStore } from '@/lib/cart-store';
+import Image from 'next/image';
 
 const navLinks = [
   { name: 'Home', href: '/' },
@@ -53,11 +54,10 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        isScrolled
-          ? 'bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm'
-          : 'bg-background'
-      }`}
+      className={`sticky top-0 z-50 w-full transition-all duration-300 ${isScrolled
+        ? 'bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm'
+        : 'bg-background'
+        }`}
     >
       <div className="container px-4 md:px-6">
         <div className="flex items-center justify-between h-16">
@@ -67,9 +67,10 @@ export function Header() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <h1 className="text-xl font-bold">
-                <span className="text-primary">Shop</span>Hub
-              </h1>
+              {/* <h1 className="text-xl font-bold">
+                <span className="text-primary">BUY</span>BRO
+              </h1> */}
+              <Image src="/images/6791.png" width={100} className='rounded-xs' height={0} alt='Logo' />
             </motion.div>
           </Link>
 
@@ -79,11 +80,10 @@ export function Header() {
               <Link
                 key={link.name}
                 href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  pathname === link.href
-                    ? 'text-primary'
-                    : 'text-muted-foreground'
-                }`}
+                className={`text-sm font-medium transition-colors hover:text-primary ${pathname === link.href
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+                  }`}
               >
                 {link.name}
               </Link>
@@ -170,6 +170,7 @@ export function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-80">
+                <SheetTitle>Search...</SheetTitle>
                 <div className="flex flex-col gap-4 mt-8">
                   {/* Mobile Search */}
                   <div className="relative">
@@ -188,11 +189,10 @@ export function Header() {
                         key={link.name}
                         href={link.href}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          pathname === link.href
-                            ? 'bg-primary/10 text-primary'
-                            : 'hover:bg-muted'
-                        }`}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pathname === link.href
+                          ? 'bg-primary/10 text-primary'
+                          : 'hover:bg-muted'
+                          }`}
                       >
                         {link.name}
                       </Link>

@@ -1,13 +1,13 @@
-import { init, InstantReact } from '@instantdb/react';
+import { init } from '@instantdb/react';
 
 // InstantDB App ID from environment
 const APP_ID = process.env.NEXT_PUBLIC_INSTANT_APP_ID || process.env.INSTANT_APP_ID || '15965306-4c1b-425f-ab5b-8b8a41ffcb39';
 
 // Initialize InstantDB client
-export const db: InstantReact = init({ appId: APP_ID });
+export const db = init({ appId: APP_ID });
 
 // Admin token for server-side operations
-export const ADMIN_TOKEN = process.env.INSTANT_APP_ADMIN_TOKEN || '';
+export const ADMIN_TOKEN = process.env.INSTANT_APP_ADMIN_TOKEN || 'c89d31dd-c2fb-41fe-9e67-c0946668be33';
 
 // Query helpers for common operations
 export const queries = {

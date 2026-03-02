@@ -9,11 +9,12 @@ import { ProductSort } from '@/components/store/ProductSort';
 import { SearchBar } from '@/components/store/SearchBar';
 import { Pagination } from '@/components/store/Pagination';
 import type { SortOption } from '@/types';
+import db from '@/lib/db';
 
 export default function StorePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const [category, setCategory] = useState<string | undefined>(searchParams.get('category') || undefined);
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
@@ -28,6 +29,8 @@ export default function StorePage() {
     totalPages: 0,
   });
 
+
+
   // Update URL params
   useEffect(() => {
     const params = new URLSearchParams();
@@ -36,7 +39,8 @@ export default function StorePage() {
     if (sort !== 'newest') params.set('sort', sort);
     if (featured) params.set('featured', 'true');
     if (page > 1) params.set('page', page.toString());
-    
+
+
     const newUrl = params.toString() ? `/store?${params.toString()}` : '/store';
     router.replace(newUrl, { scroll: false });
   }, [category, search, sort, featured, page, router]);
@@ -79,7 +83,7 @@ export default function StorePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-muted/30">
+      {/* <div className="border-b bg-muted/30">
         <div className="container px-4 md:px-6 py-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -96,7 +100,7 @@ export default function StorePage() {
             </p>
           </motion.div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Content */}
       <div className="container px-4 md:px-6 py-8">
@@ -118,11 +122,11 @@ export default function StorePage() {
               <div className="flex items-center gap-4 w-full sm:w-auto">
                 <SearchBar
                   value={search}
-                  onChange={handleSearchChange}
+                  onSearch={handleSearchChange}
                   placeholder="Search products..."
                   className="w-full sm:w-64"
                 />
-                <ProductSort value={sort} onChange={handleSortChange} />
+                <ProductSort value={sort} onSortChange={handleSortChange} />
               </div>
             </div>
 

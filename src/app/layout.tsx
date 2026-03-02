@@ -1,5 +1,3 @@
-// src/app/layout.tsx
-
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -34,7 +32,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "buyBro - Premium Online Shopping",
+    title: "BuyBro - Premium Online Shopping",
     description: "Discover premium products with fast shipping and great prices",
   },
 };

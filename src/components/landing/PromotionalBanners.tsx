@@ -23,7 +23,7 @@ export function PromotionalBanners() {
       try {
         const response = await fetch('/api/banners');
         const data = await response.json();
-        
+
         if (data.success) {
           setBanners(data.data);
         }
@@ -93,7 +93,7 @@ export function PromotionalBanners() {
             loop: true,
             align: 'start',
           }}
-          autoplay={5000}
+          // autoPlay={5000}
           className="w-full"
         >
           <CarouselContent>
@@ -111,7 +111,7 @@ export function PromotionalBanners() {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
-                  
+
                   <div className="absolute inset-0 flex items-center">
                     <div className="px-8 md:px-16 max-w-xl">
                       <motion.h2

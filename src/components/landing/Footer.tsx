@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { 
-  Facebook, 
-  Twitter, 
-  Instagram, 
-  Youtube, 
-  Mail, 
-  Phone, 
+import {
+  Facebook,
+  Twitter,
+  Instagram,
+  Youtube,
+  Mail,
+  Phone,
   MapPin,
   CreditCard,
   Truck,
@@ -87,7 +87,7 @@ export function Footer() {
               </h2>
             </Link>
             <p className="text-muted-foreground mt-4 text-sm">
-              Your one-stop destination for premium products. We curate the best items 
+              Your one-stop destination for premium products. We curate the best items
               from around the world to bring you quality, style, and value.
             </p>
 
@@ -199,23 +199,28 @@ export function Footer() {
         <div className="container px-4 md:px-6 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} ShopHub. All rights reserved.
+              © {new Date().getFullYear()} BuyBro. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/100px-Visa_Inc._logo.svg.png"
-                alt="Visa"
-                className="h-6 opacity-50"
+                src="https://www.dutchbanglabank.com/img/slides/mobile-Banking-Billboard.jpg"
+                alt="DBBL ROCKET"
+                className="h-6"
+              />
+              <img
+                src="https://nagad.com.bd/_nuxt/img/new-logo.14fe8a5.png"
+                alt="Nagad"
+                className="h-6"
               />
               <img
                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/100px-Mastercard-logo.svg.png"
                 alt="Mastercard"
-                className="h-6 opacity-50"
+                className="h-6"
               />
               <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/100px-PayPal.svg.png"
-                alt="PayPal"
-                className="h-6 opacity-50"
+                src="https://cdn.brandfetch.io/idxAg10C0L/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1746435914582"
+                alt="Stripe"
+                className="h-8"
               />
             </div>
           </div>

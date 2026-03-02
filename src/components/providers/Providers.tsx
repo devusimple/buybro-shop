@@ -1,12 +1,11 @@
-// src/components/providers/Providers.tsx
 "use client";
 
 import { ThemeProvider } from "next-themes";
-import { SessionProvider } from "next-auth/react";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
-        <SessionProvider>
+        <AuthProvider>
             <ThemeProvider
                 attribute="class"
                 defaultTheme="system"
@@ -15,6 +14,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
             >
                 {children}
             </ThemeProvider>
-        </SessionProvider>
+        </AuthProvider>
     );
 }

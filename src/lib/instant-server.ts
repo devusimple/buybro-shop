@@ -1,12 +1,15 @@
-import { init, id } from '@instantdb/core';
+import { init, id } from '@instantdb/admin';
+import schema from '../../schema';
 
-const APP_ID = process.env.INSTANT_APP_ID || '15965306-4c1b-425f-ab5b-8b8a41ffcb39';
-const ADMIN_TOKEN = process.env.INSTANT_APP_ADMIN_TOKEN || '';
+const APP_ID = process.env.INSTANT_APP_ID || process.env.NEXT_PUBLIC_INSTANT_APP_ID || '15965306-4c1b-425f-ab5b-8b8a41ffcb39';
+const ADMIN_TOKEN = process.env.INSTANT_APP_ADMIN_TOKEN || 'c89d31dd-c2fb-41fe-9e67-c0946668be33';
 
-// Initialize InstantDB
+// Initialize InstantDB with admin token for server-side operations
 export const db = init({
   appId: APP_ID,
-  __adminToken: ADMIN_TOKEN,
+  schema,
+  adminToken: ADMIN_TOKEN,
+  useDateObjects: true,
 });
 
 // Export ID generator
@@ -15,15 +18,13 @@ export { id };
 // Admin API for server-side operations
 const INSTANT_API = 'https://api.instantdb.com';
 
-interface AdminQueryResponse {
-  [key: string]: unknown;
-}
-
 // Server-side query function using admin API
-export async function queryDB(query: object): Promise<{ result: AdminQueryResponse | null; error: string | null }> {
+export async function queryDB(query: object): Promise<{ result: Record<string, unknown[]> | null; error: string | null }> {
   try {
     console.log('[InstantDB] Querying:', JSON.stringify(query));
-    
+    const result = await db.query(query);
+    console.log('[InstantDB] Query result:', result);
+
     const response = await fetch(`${INSTANT_API}/admin/query`, {
       method: 'POST',
       headers: {
@@ -37,7 +38,7 @@ export async function queryDB(query: object): Promise<{ result: AdminQueryRespon
     });
 
     const data = await response.json();
-    console.log('[InstantDB] Query response:', JSON.stringify(data).substring(0, 500));
+    console.log('[InstantDB] Query response status:', response.status);
     
     if (!response.ok) {
       console.error('[InstantDB] Query error:', data);
@@ -57,20 +58,33 @@ export async function transactDB(operations: Array<{
   namespace: string;
   id: string;
   data?: object;
+  linked?: { entity: string; id: string }[];
 }>): Promise<{ success: boolean; error: string | null }> {
   try {
     // Convert operations to InstantDB push format
-    const steps = operations.map(op => {
+    const steps: unknown[] = [];
+    
+    for (const op of operations) {
       if (op.action === 'update') {
-        return ['update', op.namespace, op.id, op.data];
+        steps.push(['update', op.namespace, op.id, op.data]);
+        // Add links if provided
+        if (op.linked) {
+          for (const link of op.linked) {
+            steps.push(['link', op.namespace, op.id, link.entity, link.id]);
+          }
+        }
       } else if (op.action === 'delete') {
-        return ['delete', op.namespace, op.id];
+        steps.push(['delete', op.namespace, op.id]);
       } else if (op.action === 'link') {
-        return ['link', op.namespace, op.id, op.data];
-      } else {
-        return ['unlink', op.namespace, op.id, op.data];
+        if (op.data) {
+          steps.push(['link', op.namespace, op.id, op.data]);
+        }
+      } else if (op.action === 'unlink') {
+        if (op.data) {
+          steps.push(['unlink', op.namespace, op.id, op.data]);
+        }
       }
-    });
+    }
 
     console.log('[InstantDB] Pushing transaction:', JSON.stringify(steps).substring(0, 500));
 
@@ -103,21 +117,36 @@ export async function transactDB(operations: Array<{
 }
 
 // Helper to create update operation
-export function updateOp(namespace: string, id: string, data: object) {
-  return { action: 'update' as const, namespace, id, data };
+export function updateOp(namespace: string, entityId: string, data: object, linked?: { entity: string; id: string }[]) {
+  return { action: 'update' as const, namespace, id: entityId, data, linked };
 }
 
 // Helper to create delete operation
-export function deleteOp(namespace: string, id: string) {
-  return { action: 'delete' as const, namespace, id };
+export function deleteOp(namespace: string, entityId: string) {
+  return { action: 'delete' as const, namespace, id: entityId };
 }
 
 // Helper to create link operation
-export function linkOp(namespace: string, id: string, data: object) {
-  return { action: 'link' as const, namespace, id, data };
+export function linkOp(namespace: string, entityId: string, linkedEntity: string, linkedId: string) {
+  return { action: 'link' as const, namespace, id: entityId, data: { entity: linkedEntity, id: linkedId } };
 }
 
 // Helper to create unlink operation
-export function unlinkOp(namespace: string, id: string, data: object) {
-  return { action: 'unlink' as const, namespace, id, data };
+export function unlinkOp(namespace: string, entityId: string, linkedEntity: string, linkedId: string) {
+  return { action: 'unlink' as const, namespace, id: entityId, data: { entity: linkedEntity, id: linkedId } };
+}
+
+// Utility function to generate unique slugs
+export function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+// Utility function to generate order numbers
+export function generateOrderNumber(): string {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `ORD-${timestamp}-${random}`;
 }

@@ -1,36 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { Product, Category } from '@/types';
-
-// Mock data store (in production, this would come from InstantDB)
-const mockCategories: Category[] = [
-  { id: '1', name: 'Electronics', slug: 'electronics', description: 'Latest gadgets and electronic devices', image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400', parentId: null, createdAt: Date.now(), updatedAt: Date.now() },
-  { id: '2', name: 'Fashion', slug: 'fashion', description: 'Trendy clothing and accessories', image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400', parentId: null, createdAt: Date.now(), updatedAt: Date.now() },
-  { id: '3', name: 'Home & Living', slug: 'home-living', description: 'Furniture and home decor', image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400', parentId: null, createdAt: Date.now(), updatedAt: Date.now() },
-  { id: '4', name: 'Sports', slug: 'sports', description: 'Sports equipment and activewear', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400', parentId: null, createdAt: Date.now(), updatedAt: Date.now() },
-  { id: '5', name: 'Beauty', slug: 'beauty', description: 'Skincare, makeup, and beauty products', image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400', parentId: null, createdAt: Date.now(), updatedAt: Date.now() },
-];
-
-const sampleImages = [
-  'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
-  'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
-  'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800',
-  'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800',
-  'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=800',
-  'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=800',
-  'https://images.unsplash.com/photo-1585155770913-5bca09b66794?w=800',
-  'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=800',
-];
-
-const mockProducts: (Product & { category?: Category })[] = [
-  { id: '1', name: 'Premium Wireless Headphones', slug: 'premium-wireless-headphones', description: 'Crystal-clear audio with ANC. Features active noise cancellation, 30-hour battery life, and comfortable over-ear design.', shortDescription: 'Crystal-clear audio', price: 299.99, comparePrice: 399.99, costPrice: 120, sku: 'WH-1000', barcode: '12345678', quantity: 150, weight: 0.5, images: [sampleImages[0]], featured: true, status: 'active', tags: ['headphones', 'wireless', 'audio'], createdAt: Date.now(), updatedAt: Date.now(), categoryId: '1', category: mockCategories[0] },
-  { id: '2', name: 'Smart Watch Pro', slug: 'smart-watch-pro', description: 'Advanced fitness tracking. Features heart rate monitoring, GPS tracking, water resistance, and a stunning AMOLED display.', shortDescription: 'Fitness tracking', price: 449.99, comparePrice: 549.99, costPrice: 180, sku: 'SW-PRO', barcode: '12345679', quantity: 85, weight: 0.3, images: [sampleImages[1]], featured: true, status: 'active', tags: ['watch', 'smart', 'fitness'], createdAt: Date.now(), updatedAt: Date.now(), categoryId: '1', category: mockCategories[0] },
-  { id: '3', name: 'Designer Sunglasses', slug: 'designer-sunglasses', description: 'Premium UV protection. Features UV400 protection, lightweight titanium frame, and scratch-resistant lenses.', shortDescription: 'UV protection', price: 189.99, comparePrice: null, costPrice: 75, sku: 'SG-D01', barcode: '12345680', quantity: 200, weight: 0.2, images: [sampleImages[2]], featured: false, status: 'active', tags: ['sunglasses', 'fashion'], createdAt: Date.now(), updatedAt: Date.now(), categoryId: '2', category: mockCategories[1] },
-  { id: '4', name: 'Minimalist Backpack', slug: 'minimalist-backpack', description: 'Sleek everyday design. Features a 15.6" laptop compartment, water-resistant fabric, and ergonomic design.', shortDescription: 'Sleek design', price: 129.99, comparePrice: 159.99, costPrice: 52, sku: 'BP-M01', barcode: '12345681', quantity: 300, weight: 1.2, images: [sampleImages[3]], featured: true, status: 'active', tags: ['backpack', 'travel'], createdAt: Date.now(), updatedAt: Date.now(), categoryId: '2', category: mockCategories[1] },
-  { id: '5', name: 'Organic Skincare Set', slug: 'organic-skincare-set', description: 'Natural skincare routine. Includes cleanser, toner, moisturizer, and face mask.', shortDescription: 'Natural skincare', price: 79.99, comparePrice: 99.99, costPrice: 32, sku: 'SK-ORG', barcode: '12345682', quantity: 175, weight: 0.8, images: [sampleImages[5]], featured: true, status: 'active', tags: ['skincare', 'organic'], createdAt: Date.now(), updatedAt: Date.now(), categoryId: '5', category: mockCategories[4] },
-  { id: '6', name: 'Yoga Mat Premium', slug: 'yoga-mat-premium', description: 'Non-slip surface for perfect practice. Features extra cushioning and eco-friendly materials.', shortDescription: 'Non-slip mat', price: 59.99, comparePrice: null, costPrice: 24, sku: 'YM-P01', barcode: '12345683', quantity: 250, weight: 2.5, images: [sampleImages[6]], featured: false, status: 'active', tags: ['yoga', 'fitness'], createdAt: Date.now(), updatedAt: Date.now(), categoryId: '4', category: mockCategories[3] },
-  { id: '7', name: 'Ceramic Vase Collection', slug: 'ceramic-vase-collection', description: 'Handcrafted elegance. Each piece is unique, available in various sizes and colors.', shortDescription: 'Handcrafted', price: 49.99, comparePrice: 69.99, costPrice: 20, sku: 'VC-01', barcode: '12345684', quantity: 120, weight: 1.5, images: [sampleImages[7]], featured: false, status: 'active', tags: ['vase', 'home'], createdAt: Date.now(), updatedAt: Date.now(), categoryId: '3', category: mockCategories[2] },
-  { id: '8', name: 'Professional Camera Lens', slug: 'professional-camera-lens', description: 'Professional quality optics. Features advanced optics, fast autofocus, and weather-sealed construction.', shortDescription: 'Pro quality', price: 899.99, comparePrice: 1099.99, costPrice: 360, sku: 'CL-PRO', barcode: '12345685', quantity: 45, weight: 1.8, images: [sampleImages[4]], featured: true, status: 'active', tags: ['camera', 'lens'], createdAt: Date.now(), updatedAt: Date.now(), categoryId: '1', category: mockCategories[0] },
-];
+import { queryDB, transactDB, id, updateOp, deleteOp } from '@/lib/instant-server';
+import db from '@/lib/db';
 
 // GET /api/products - Get all products with filtering and sorting
 export async function GET(request: NextRequest) {
@@ -46,54 +16,134 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
 
-    let products = [...mockProducts];
 
-    // Apply filters
-    if (category) {
-      products = products.filter(p => p.category?.slug === category);
+    // Build query for InstantDB
+    const query: Record<string, any> = {
+      products: {
+        $: {
+          where: {},
+        },
+        category: {},
+      },
+      categories: {},
+    };
+    
+    // Apply status filter
+    if (status) {
+      (query.products.$.where as Record<string, unknown>).status = status;
     }
 
-    if (minPrice) {
-      products = products.filter(p => p.price >= parseFloat(minPrice));
+    // Apply featured filter
+    if (featured === 'true') {
+      (query.products.$.where as Record<string, unknown>).featured = true;
     }
 
-    if (maxPrice) {
-      products = products.filter(p => p.price <= parseFloat(maxPrice));
-    }
+    // Query InstantDB
+    const { result, error } = await queryDB(query);
 
-    if (search) {
-      const searchLower = search.toLowerCase();
-      products = products.filter(p => 
-        p.name.toLowerCase().includes(searchLower) ||
-        p.description?.toLowerCase().includes(searchLower)
+    if (error || !result) {
+      console.error('InstantDB query error:', error);
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to fetch products' },
+        { status: 500 }
       );
     }
 
-    if (featured === 'true') {
-      products = products.filter(p => p.featured);
+    let products = result.products || [];
+    const categories = result.categories || [];
+
+    // Create category lookup map
+    const categoryMap = new Map(
+      categories.map((cat: Record<string, unknown>) => [cat.id, cat])
+    );
+
+    // Enrich products with category data
+    products = products.map((product: Record<string, unknown>) => {
+      const productData = { ...product };
+      
+      // Parse JSON fields
+      if (typeof productData.images === 'string') {
+        try {
+          productData.images = JSON.parse(productData.images as string);
+        } catch {
+          productData.images = [];
+        }
+      }
+      if (typeof productData.tags === 'string') {
+        try {
+          productData.tags = JSON.parse(productData.tags as string);
+        } catch {
+          productData.tags = [];
+        }
+      }
+
+      // Add category data
+      if (product.category) {
+        const catData = product.category as Record<string, unknown>;
+        productData.category = catData;
+      } else if (product.categoryId) {
+        productData.category = categoryMap.get(product.categoryId as string);
+      }
+
+      return productData;
+    });
+
+    // Apply category filter (by slug)
+    if (category) {
+      products = products.filter((p: Record<string, unknown>) => 
+        (p.category as Record<string, unknown>)?.slug === category
+      );
     }
 
-    if (status) {
-      products = products.filter(p => p.status === status);
+    // Apply price filters
+    if (minPrice) {
+      products = products.filter((p: Record<string, unknown>) => 
+        (p.price as number) >= parseFloat(minPrice)
+      );
+    }
+
+    if (maxPrice) {
+      products = products.filter((p: Record<string, unknown>) => 
+        (p.price as number) <= parseFloat(maxPrice)
+      );
+    }
+
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      products = products.filter((p: Record<string, unknown>) => 
+        (p.name as string)?.toLowerCase().includes(searchLower) ||
+        (p.description as string)?.toLowerCase().includes(searchLower)
+      );
     }
 
     // Apply sorting
     switch (sort) {
       case 'price_asc':
-        products.sort((a, b) => a.price - b.price);
+        products.sort((a: Record<string, unknown>, b: Record<string, unknown>) => 
+          (a.price as number) - (b.price as number)
+        );
         break;
       case 'price_desc':
-        products.sort((a, b) => b.price - a.price);
+        products.sort((a: Record<string, unknown>, b: Record<string, unknown>) => 
+          (b.price as number) - (a.price as number)
+        );
         break;
       case 'name_asc':
-        products.sort((a, b) => a.name.localeCompare(b.name));
+        products.sort((a: Record<string, unknown>, b: Record<string, unknown>) => 
+          (a.name as string).localeCompare(b.name as string)
+        );
         break;
       case 'name_desc':
-        products.sort((a, b) => b.name.localeCompare(a.name));
+        products.sort((a: Record<string, unknown>, b: Record<string, unknown>) => 
+          (b.name as string).localeCompare(a.name as string)
+        );
         break;
       case 'newest':
       default:
-        products.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        products.sort((a: Record<string, unknown>, b: Record<string, unknown>) => 
+          (b.createdAt as number) - (a.createdAt as number)
+        );
         break;
     }
 
@@ -128,11 +178,62 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // For demo, just return success
+    const {
+      name,
+      slug,
+      description,
+      shortDescription,
+      price,
+      comparePrice,
+      costPrice,
+      sku,
+      barcode,
+      quantity,
+      weight,
+      images,
+      featured = false,
+      status = 'active',
+      tags,
+      categoryId,
+    } = body;
+
+    const productId = id();
+    const now = Date.now();
+    const productSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    // Create the product
+    const { success, error } = await transactDB([
+      updateOp('products', productId, {
+        name,
+        slug: productSlug,
+        description: description || '',
+        shortDescription: shortDescription || '',
+        price: parseFloat(price),
+        comparePrice: comparePrice ? parseFloat(comparePrice) : null,
+        costPrice: costPrice ? parseFloat(costPrice) : null,
+        sku: sku || '',
+        barcode: barcode || '',
+        quantity: parseInt(quantity) || 0,
+        weight: weight ? parseFloat(weight) : null,
+        images: JSON.stringify(images || []),
+        featured,
+        status,
+        tags: JSON.stringify(tags || []),
+        createdAt: now,
+        updatedAt: now,
+      }, categoryId ? [{ entity: 'categories', id: categoryId }] : undefined),
+    ]);
+
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to create product' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      data: { id: `${Date.now()}` },
+      data: { id: productId, slug: productSlug },
       message: 'Product created successfully',
     });
   } catch (error) {

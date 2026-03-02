@@ -1,32 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { init, id, tx } from '@instantdb/core';
-import type { Testimonial } from '@/types';
+import { queryDB, transactDB, id, updateOp, deleteOp } from '@/lib/instant-server';
 
-const APP_ID = process.env.INSTANT_APP_ID || '15965306-4c1b-425f-ab5b-8b8a41ffcb39';
-const db = init({ appId: APP_ID });
-
-// GET /api/testimonials - Get approved testimonials
+// GET /api/testimonials - Get all testimonials
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const approved = searchParams.get('approved');
 
-    const whereClause = approved === 'false' ? {} : { approved: true };
-
-    const result = await db.query({
+    // Build query
+    const query: Record<string, unknown> = {
       testimonials: {
-        $: { where: whereClause },
+        $: {
+          order: {
+            createdAt: 'desc' as const,
+          },
+        },
       },
-    });
+    };
 
-    const testimonials = (result.testimonials || []) as Testimonial[];
+    if (approved === 'true') {
+      (query.testimonials.$ as Record<string, unknown>).where = { approved: true };
+    }
 
-    // Sort by date
-    testimonials.sort((a, b) => b.createdAt - a.createdAt);
+    // Query InstantDB
+    const { result, error } = await queryDB(query);
+
+    if (error || !result) {
+      console.error('InstantDB query error:', error);
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to fetch testimonials' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: testimonials,
+      data: result.testimonials || [],
     });
   } catch (error) {
     console.error('Error fetching testimonials:', error);
@@ -41,34 +50,108 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, role, company, content, rating, image } = body;
+    const { name, role, content, rating, avatar } = body;
 
     const testimonialId = id();
     const now = Date.now();
 
-    await db.transact(
-      tx.testimonials[testimonialId].update({
+    const { success, error } = await transactDB([
+      updateOp('testimonials', testimonialId, {
         name,
-        email: email || '',
         role: role || '',
-        company: company || '',
         content,
         rating: parseInt(rating) || 5,
-        image: image || '',
-        approved: false, // Require admin approval
+        avatar: avatar || '',
+        approved: false, // Requires admin approval
         createdAt: now,
-      })
-    );
+      }),
+    ]);
+
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to create testimonial' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       data: { id: testimonialId },
-      message: 'Testimonial submitted for review',
+      message: 'Testimonial submitted successfully. It will be reviewed before publishing.',
     });
   } catch (error) {
     console.error('Error creating testimonial:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to create testimonial' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/testimonials - Update testimonial (approve/reject)
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id: testimonialId, approved } = body;
+
+    const { success, error } = await transactDB([
+      updateOp('testimonials', testimonialId, {
+        approved,
+      }),
+    ]);
+
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to update testimonial' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Testimonial updated successfully',
+    });
+  } catch (error) {
+    console.error('Error updating testimonial:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update testimonial' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/testimonials - Delete a testimonial
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const testimonialId = searchParams.get('id');
+
+    if (!testimonialId) {
+      return NextResponse.json(
+        { success: false, error: 'Testimonial ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const { success, error } = await transactDB([
+      deleteOp('testimonials', testimonialId),
+    ]);
+
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to delete testimonial' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Testimonial deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting testimonial:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete testimonial' },
       { status: 500 }
     );
   }

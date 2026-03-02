@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PackageOpen } from 'lucide-react';
 import { ProductCard, ProductCardSkeleton } from './ProductCard';
 import type { Product, SortOption } from '@/types';
+import db from '@/lib/db';
 
 interface ProductGridProps {
   category?: string;
@@ -54,7 +55,27 @@ export function ProductGrid({
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
+    // 
 
+
+
+
+
+    const res = db.query({
+      products: {
+        $: {
+          limit,
+          offset: page,
+        },
+        category: { $: {} },
+        variants: { $: {} }
+      }
+    });
+
+
+
+
+    // 
     try {
       const params = new URLSearchParams();
       if (category) params.append('category', category);
@@ -68,7 +89,7 @@ export function ProductGrid({
 
       const response = await fetch(`/api/products?${params.toString()}`);
       const result: ProductsResponse = await response.json();
-
+      console.log("products", { result });
       if (result.success) {
         setProducts(result.data);
         onPaginationChange?.({
@@ -128,10 +149,10 @@ export function ProductGrid({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-12 text-center"
+        className="flex flex-col items-center justify-center rounded-lg border border-gray-100 p-12 text-center"
       >
         <PackageOpen className="mb-4 h-16 w-16 text-gray-400" />
-        <h3 className="text-lg font-medium text-gray-900">No products found</h3>
+        <h3 className="text-lg font-medium">No products found</h3>
         <p className="mt-2 text-gray-500">
           Try adjusting your filters or search to find what you're looking for.
         </p>

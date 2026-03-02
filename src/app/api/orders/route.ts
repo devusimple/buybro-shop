@@ -1,68 +1,105 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { init, id, tx } from '@instantdb/core';
-import type { Order, OrderItem, Address } from '@/types';
+import { queryDB, transactDB, id, updateOp } from '@/lib/instant-server';
+import { generateOrderNumber } from '@/lib/instant-server';
 
-const APP_ID = process.env.INSTANT_APP_ID || '15965306-4c1b-425f-ab5b-8b8a41ffcb39';
-const db = init({ appId: APP_ID });
-
-// Generate order number
-function generateOrderNumber(): string {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `ORD-${timestamp}-${random}`;
-}
-
-// GET /api/orders - Get orders (user's orders or all for admin)
+// GET /api/orders - Get all orders or user's orders
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const email = searchParams.get('email');
     const status = searchParams.get('status');
+    const userId = searchParams.get('userId');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
 
-    const result = await db.query({
+    // Build query for InstantDB
+    const query: Record<string, unknown> = {
       orders: {
-        user: {},
+        $: {
+          order: {
+            createdAt: 'desc' as const,
+          },
+        },
         items: {
           product: {},
         },
+        user: {},
       },
-    });
+    };
+
+    // Apply status filter
+    if (status) {
+      (query.orders.$ as Record<string, unknown>).where = { status };
+    }
+
+    // Query InstantDB
+    const { result, error } = await queryDB(query);
+
+    if (error || !result) {
+      console.error('InstantDB query error:', error);
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to fetch orders' },
+        { status: 500 }
+      );
+    }
 
     let orders = result.orders || [];
 
-    // Filter by user
+    // Filter by userId if provided
     if (userId) {
-      orders = orders.filter((o: Order) => o.userId === userId);
+      orders = orders.filter((order: Record<string, unknown>) => {
+        const orderUser = order.user as Record<string, unknown> | undefined;
+        return orderUser?.id === userId;
+      });
     }
 
-    // Filter by email (for guest orders)
-    if (email) {
-      orders = orders.filter((o: Order) => o.email === email);
-    }
+    // Enrich orders with parsed data
+    orders = orders.map((order: Record<string, unknown>) => {
+      const orderData = { ...order };
+      
+      // Parse JSON fields
+      if (typeof orderData.shippingAddress === 'string') {
+        try {
+          orderData.shippingAddress = JSON.parse(orderData.shippingAddress as string);
+        } catch {
+          orderData.shippingAddress = null;
+        }
+      }
+      if (typeof orderData.billingAddress === 'string') {
+        try {
+          orderData.billingAddress = JSON.parse(orderData.billingAddress as string);
+        } catch {
+          orderData.billingAddress = null;
+        }
+      }
 
-    // Filter by status
-    if (status) {
-      orders = orders.filter((o: Order) => o.status === status);
-    }
+      // Calculate item totals
+      if (Array.isArray(orderData.items)) {
+        orderData.itemCount = orderData.items.reduce(
+          (sum: number, item: Record<string, unknown>) => sum + (item.quantity as number || 0), 
+          0
+        );
+      }
 
-    // Sort by date
-    orders.sort((a: Order, b: Order) => b.createdAt - a.createdAt);
+      return orderData;
+    });
 
-    // Parse JSON fields
-    const ordersWithParsedData = orders.map((order: Order) => ({
-      ...order,
-      shippingAddress: typeof order.shippingAddress === 'string' 
-        ? JSON.parse(order.shippingAddress as unknown as string) 
-        : order.shippingAddress,
-      billingAddress: typeof order.billingAddress === 'string' 
-        ? JSON.parse(order.billingAddress as unknown as string) 
-        : order.billingAddress,
-    }));
+    // Pagination
+    const total = orders.length;
+    const totalPages = Math.ceil(total / limit);
+    const offset = (page - 1) * limit;
+    const paginatedOrders = orders.slice(offset, offset + limit);
 
     return NextResponse.json({
       success: true,
-      data: ordersWithParsedData,
+      data: paginatedOrders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
     });
   } catch (error) {
     console.error('Error fetching orders:', error);
@@ -78,17 +115,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      userId,
-      email,
       items,
       shippingAddress,
       billingAddress,
-      paymentMethod,
       subtotal,
       tax,
       shipping,
-      discount,
       total,
+      userId,
       notes,
     } = body;
 
@@ -96,74 +130,54 @@ export async function POST(request: NextRequest) {
     const orderNumber = generateOrderNumber();
     const now = Date.now();
 
-    // Create order
-    await db.transact(
-      tx.orders[orderId].update({
+    // Create order and order items
+    const operations = [
+      // Create the order
+      updateOp('orders', orderId, {
         orderNumber,
-        userId: userId || null,
-        email,
         status: 'pending',
         paymentStatus: 'pending',
-        paymentMethod: paymentMethod || 'card',
-        subtotal: parseFloat(subtotal),
+        subtotal: parseFloat(subtotal) || 0,
         tax: parseFloat(tax) || 0,
         shipping: parseFloat(shipping) || 0,
-        discount: parseFloat(discount) || 0,
-        total: parseFloat(total),
+        total: parseFloat(total) || 0,
         shippingAddress: JSON.stringify(shippingAddress),
-        billingAddress: billingAddress ? JSON.stringify(billingAddress) : null,
+        billingAddress: billingAddress ? JSON.stringify(billingAddress) : '',
         notes: notes || '',
         createdAt: now,
         updatedAt: now,
-      })
-    );
-
-    // Link user if provided
-    if (userId) {
-      await db.transact(tx.orders[orderId].link({ user: userId }));
-    }
+      }, userId ? [{ entity: '$users', id: userId }] : undefined),
+    ];
 
     // Create order items
     for (const item of items) {
       const itemId = id();
-      await db.transact(
-        tx.orderItems[itemId].update({
-          orderId,
-          productId: item.productId || null,
-          variantId: item.variantId || null,
-          name: item.name,
-          sku: item.sku || '',
+      operations.push(
+        updateOp('orderItems', itemId, {
+          quantity: item.quantity,
           price: parseFloat(item.price),
-          quantity: parseInt(item.quantity),
-          total: parseFloat(item.price) * parseInt(item.quantity),
-          image: item.image || '',
+          total: parseFloat(item.price) * item.quantity,
           createdAt: now,
-        })
+        }, [
+          { entity: 'orders', id: orderId },
+          { entity: 'products', id: item.productId },
+        ])
       );
+    }
 
-      // Link to order
-      await db.transact(tx.orderItems[itemId].link({ order: orderId }));
+    // Execute transaction
+    const { success, error } = await transactDB(operations);
 
-      // Link to product if provided
-      if (item.productId) {
-        await db.transact(tx.orderItems[itemId].link({ product: item.productId }));
-
-        // Update product quantity
-        const productResult = await db.query({
-          products: { $: { where: { id: item.productId } } },
-        });
-        
-        const product = productResult.products?.[0];
-        if (product) {
-          const newQuantity = Math.max(0, (product.quantity || 0) - parseInt(item.quantity));
-          await db.transact(tx.products[item.productId].update({ quantity: newQuantity }));
-        }
-      }
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to create order' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      data: { orderId, orderNumber },
+      data: { id: orderId, orderNumber },
       message: 'Order created successfully',
     });
   } catch (error) {

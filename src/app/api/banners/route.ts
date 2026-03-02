@@ -1,29 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { init, id, tx } from '@instantdb/core';
-import type { PromotionalBanner } from '@/types';
+import { queryDB, transactDB, id, updateOp, deleteOp } from '@/lib/instant-server';
 
-const APP_ID = process.env.INSTANT_APP_ID || '15965306-4c1b-425f-ab5b-8b8a41ffcb39';
-const db = init({ appId: APP_ID });
-
-// GET /api/banners - Get active banners
+// GET /api/banners - Get all banners
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const active = searchParams.get('active');
 
-    const whereClause = active === 'false' ? {} : { active: true };
-
-    const result = await db.query({
-      promotionalBanners: {
-        $: { where: whereClause, order: { order: 'asc' } },
+    // Build query
+    const query: Record<string, unknown> = {
+      banners: {
+        $: {
+          order: {
+            order: 'asc' as const,
+          },
+        },
       },
-    });
+    };
 
-    const banners = (result.promotionalBanners || []) as PromotionalBanner[];
+    if (active === 'true') {
+      (query.banners.$ as Record<string, unknown>).where = { active: true };
+    }
+
+    // Query InstantDB
+    const { result, error } = await queryDB(query);
+
+    if (error || !result) {
+      console.error('InstantDB query error:', error);
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to fetch banners' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: banners,
+      data: result.banners || [],
     });
   } catch (error) {
     console.error('Error fetching banners:', error);
@@ -34,7 +46,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/banners - Create a new banner (admin)
+// POST /api/banners - Create a new banner
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -43,18 +55,26 @@ export async function POST(request: NextRequest) {
     const bannerId = id();
     const now = Date.now();
 
-    await db.transact(
-      tx.promotionalBanners[bannerId].update({
+    const { success, error } = await transactDB([
+      updateOp('banners', bannerId, {
         title,
         subtitle: subtitle || '',
-        image,
+        image: image || '',
         link: link || '',
         buttonText: buttonText || '',
         active: active ?? true,
-        order: order || 0,
+        order: parseInt(order) || 0,
         createdAt: now,
-      })
-    );
+        updatedAt: now,
+      }),
+    ]);
+
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to create banner' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -70,20 +90,25 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT /api/banners - Update banner
+// PUT /api/banners - Update a banner
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, ...updateData } = body;
+    const { id: bannerId, ...updates } = body;
 
-    if (!id) {
+    const { success, error } = await transactDB([
+      updateOp('banners', bannerId, {
+        ...updates,
+        updatedAt: Date.now(),
+      }),
+    ]);
+
+    if (!success) {
       return NextResponse.json(
-        { success: false, error: 'Banner ID is required' },
-        { status: 400 }
+        { success: false, error: error || 'Failed to update banner' },
+        { status: 500 }
       );
     }
-
-    await db.transact(tx.promotionalBanners[id].update(updateData));
 
     return NextResponse.json({
       success: true,
@@ -98,20 +123,29 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE /api/banners - Delete banner
+// DELETE /api/banners - Delete a banner
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const bannerId = searchParams.get('id');
 
-    if (!id) {
+    if (!bannerId) {
       return NextResponse.json(
         { success: false, error: 'Banner ID is required' },
         { status: 400 }
       );
     }
 
-    await db.transact(tx.promotionalBanners[id].delete());
+    const { success, error } = await transactDB([
+      deleteOp('banners', bannerId),
+    ]);
+
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: error || 'Failed to delete banner' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
